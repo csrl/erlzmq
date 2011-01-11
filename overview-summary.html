@@ -9,11 +9,11 @@
 <div class="navbar"><a name="#navbar_top"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
 <h1>Erlang bindings for ZeroMQ messaging framework.
 </h1>
-<p>Copyright © 2010 Serge Aleynikov and Dhammika Pathirana
+<p>Copyright © 2010 Serge Aleynikov and Dhammika Pathirana, 2011 Chris Rempel
 </p>
-<p><b>Version:</b> 0.1
+<p><b>Version:</b> 0.2
 </p>
-<p><b>Authors:</b> Serge Aleynikov (<a href="mailto:saleyn at gmail dot com"><tt>saleyn at gmail dot com</tt></a>), Dhammika Pathirana (<a href="mailto:dhammika at gmail dot com"><tt>dhammika at gmail dot com</tt></a>).</p>
+<p><b>Authors:</b> Serge Aleynikov (<a href="mailto:saleyn at gmail dot com"><tt>saleyn at gmail dot com</tt></a>), Dhammika Pathirana (<a href="mailto:dhammika at gmail dot com"><tt>dhammika at gmail dot com</tt></a>), Chris Rempel (<a href="mailto:csrl at gmx dot com"><tt>csrl at gmx dot com</tt></a>).</p>
 
 
 <ol>
@@ -30,40 +30,39 @@
 
 <h3><a name="Overview">Overview</a></h3>
 
-<p>ZeroMQ is an open-source fast middleware messaging framework supporting 
+<p>ZeroMQ is an open-source fast middleware messaging framework supporting
 unicast and multicast communications between peers using various convenient
-design patterns.  This project aims at interperability of Erlang with other
+design patterns.  This project aims at interoperability of Erlang with other
 ZeroMQ distributed clients that may be written in other languages.</p>
 
 <p>ZeroMQ project is found here: <a href="http://zeromq.org" target="_top"><tt>http://zeromq.org</tt></a></p>
 
 <h3><a name="Downloading">Downloading</a></h3>
 
-Project location and git origin:
+Project location and git repository:
 <ul>
 <li><a href="http://github.com/zeromq/erlzmq" target="_top"><tt>http://github.com/zeromq/erlzmq</tt></a></li>
-<li><code>git clone git@github.com:zeromq/erlzmq.git</code></li>
+<li><code>git clone http://github.com/zeromq/erlzmq.git</code></li>
 </ul>
 
 <h3><a name="Building">Building</a></h3>
 
-<p>Obtain and build the latest version of zeromq:</p>
+<p>Obtain and build the latest version of zeromq (at least 2.1.0):</p>
 
 <p><a href="http://github.com/zeromq/zeromq2" target="_top"><tt>http://github.com/zeromq/zeromq2</tt></a></p>
 
 <pre>  # Get and build 0MQ project
 
   $ cd /tmp
-  $ git clone git://github.com/sustrik/zeromq2.git zeromq
-  
-  $ cd zeromq
-  $ ./configure --with-pgm --prefix=/opt/zeromq-2.1.0
+  $ git clone http://github.com/zeromq/zeromq2.git
+  $ cd /tmp/zeromq2
+  $ ./configure
   $ make
   $ make install</pre>
 
-<p>Erlzmq project comes with a bootstrap script that uses autotools to creare a
-configure script.  Below are the steps needed to build erlzmq given the location
-of ZeroMQ installation being <code>/opt/zeromq-2.1.0</code>:</p>
+<p>Erlzmq project comes with a bootstrap script that uses autotools to create a
+configure script.  Below are the steps needed to build erlzmq given the default
+location of ZeroMQ installation being <code>/usr/local</code>:</p>
 
 <p>Make sure that Erlang is installed and <code>erl</code> is in the <code>PATH</code>. If it's not
 in the path, specify <code>--with-erlang=PATH</code> option for the configure script.</p>
@@ -71,12 +70,13 @@ in the path, specify <code>--with-erlang=PATH</code> option for the configure sc
 <p>Run:</p>
 
 <pre>  $ cd /tmp
-  $ git clone git@github.com:zeromq/erlzmq.git
+  $ git clone http://github.com/zeromq/erlzmq.git
   $ cd /tmp/erlzmq
   $ ./bootstrap
-  $ ./configure --with-zeromq=/opt/zeromq-2.1.0
+  $ ./configure --with-zeromq=/usr/local
   $ make
-  $ make docs</pre>
+  $ make docs
+  $ make install</pre>
 
 <h3><a name="Issue_Tracking">Issue Tracking</a></h3>
 
@@ -84,103 +84,88 @@ in the path, specify <code>--with-erlang=PATH</code> option for the configure sc
 
 <h3><a name="Contributing">Contributing</a></h3>
 
-<p>When you make any changes to documentation, run the following script to 
+<p>When you make any changes to documentation, run the following script to
 update documentation on the <a href="http://zeromq.github.com/erlzmq" target="_top"><tt>http://zeromq.github.com/erlzmq</tt></a> site:</p>
 
 <pre>  $ make gitdocs</pre>
 
-<p>The following make target can be used to do a cleanup of all artifacts 
+<p>The following make target can be used to do a cleanup of all artifacts
 of make and configure:</p>
 
 <pre>  $ make clean-bootstrap</pre>
 
 <h3><a name="Architecture">Architecture</a></h3>
 
-<p>A ZeroMQ context is created by calling zmq:start_link/0 or
-zmq:start_link/1 function optionally passing the number of I/O
-threads to be used by ZeroMQ framework.  The number of 
-application threads defaults to <code>1</code> and currently is not
-configurable.</p>
+<p>These erlang bindings offer nearly a direct wrapper around the ZeroMQ C bindings
+and as such referencing the ZeroMQ documentation will provide the necessary
+information on how to use the <code>zmq</code> module api.  The Erlang specific concepts
+are documented here.</p>
 
-<p>The ZeroMQ context is started and owned by the <code>zmq</code> process.
-On the contrary, ZeroMQ sockets are owned by individual Erlang 
-processes that communicate directly with the driver bypassing <code>zmq</code>
-process.  This way individual pids can issue blocking recv/1 or 
-send/2 calls without synchronizing them through the driver owner's
-pid.</p>
+<p>These bindings are aware of socket ownership by monitoring Erlang pids that
+created sockets.  This means that a socket is automatically garbage collected
+when the socket owner Erlang pid dies.</p>
 
-<p>The driver is aware of socket ownership by monitoring Erlang pids 
-that created sockets.  This means that a socket is automatically
-garbage collected when the socket owner Erlang pid dies.</p>
+<p><code>zmq:init/1</code> initializes a 0MQ Context by starting and linking a gen_server to
+the calling process. This server wraps and maintains the initialized 0MQ
+Context.  <code>zmq:init/1</code> returns the Context which is the Pid of the gen_server.
+The Context is used in <code>zmq:socket/2</code> and <code>zmq:term/1</code>.  The Context may be used
+by any erlang process when calling <code>zmq:socket/2</code> and not just the Context owner
+process.</p>
 
-<p>The semantics of socket creation function is slightly different 
-from the corresponding <code>zmq_socket(3)</code> function in a way that 
-it also accepts socket options:</p>
+<p><code>zmq:init/2</code> initializes a named 0MQ Context by starting a named gen_server.
+The returned Context is the Pid of the gen_server and can be ignored.  The
+context Name can be used as the Context when calling <code>zmq:socket/2</code> and
+<code>zmq:term/1</code>.</p>
 
-<pre>    {ok, Socket} = zmq:socket(req, [{active, true}, {hwm, 1000}]).</pre>
+<p><code>zmq:socket/2</code> creates a 0MQ Socket by starting and linking a gen_server
+to the calling process.  This server wraps and maintains the created 0MQ Socket.
+<code>zmq:socket/2</code> returns the Socket which is the Pid of the gen_server.  The
+Socket is used in the other <code>zmq</code> module socket functions.  A Socket may be used
+by any erlang process when calling into the <code>zmq</code> module and not just the owner
+process.</p>
 
-<p>All socket types and option names map 1-to-1 to corresponding 
-names of ZeroMQ socket types and options except for <code>ZMQ_</code> prefix
-being stripped.</p>
+<p><code>zmq:send/2</code> and <code>zmq:send/3</code> accept either a binary or a list of binaries.  If
+given a list of binaries, then each binary in the list will be sent with
+<code>ZMQ_SNDMORE</code> except for the last one, which ends the 0MQ message.</p>
 
-<p>A new socket option is added called <code>active</code>.  The option accepts
-a boolean argument and has the following meaning.  If the option 
-is <code>true</code>, all incoming messages are automatically delivered by
-the driver to the owner's mailbox without explicit need to 
-call zmq:recv/1.</p>
+<p><code>zmq:recv/1</code> and <code>zmq:recv/2</code> will return a binary or a list of binaries.  If
+the Socket receives a multi-part message, the entire message will be returned as
+a list of binaries.  So there is no need to explicitly check for <code>ZMQ_RCVMORE</code>
+using <code>zmq:getsockopt/2</code> and repeatedly calling <code>zmq:recv/1</code> as would be
+necessary using the native 0MQ C bindings.</p>
 
-<p>If the option is <code>false</code> the owner must explicitely call zmq:recv/1
-to receive a message from a ZeroMQ socket.  Use <code>{active, true}</code> 
-mode with causion since if the messages are arriving at a rate faster
-than the Erlang process can handle them the process's queue will
-grow and eventually run out of memory.</p>
+<p><code>zmq:poll/2</code> is non blocking and upon successfully setting up the requested
+polling for the Socket, will return <code>ok</code>.  When an event on the Socket occurs, a
+message will be put in the Socket owner's mailbox having the format of
+<code>{zmq, Socket, Events}</code> where <code>Events</code> is a list having one or both of <code>pollin</code>
+and <code>pollout</code> or if an error occurred, <code>pollerr</code>.  Once the event message is
+received, <code>zmq:poll/2</code> must be called again to receive further events.</p>
 
-<p>zmq:send/2 and zmq:recv/1 calls may block the owner Erlang process
-but will never block the Erlang VM.  The driver uses non-blocking
-calls to <code>zmq_send(3)</code> and <code>zmq_recv(3)</code> functions and will not
-deliver any result to the caller's pid until the message is 
-successfully sent or received.  Currently timeout option is not
-implemented on these two calls.</p>
-
-<p>Many Erlang pids owning many ZeroMQ sockets can be easily started
-in one Erlang VM.  However, it's more typical to have a small number
-of ZeroMQ sockets in the system, since each socket can handle many
-transport connections.</p>
+<p><code>zmq:term/1</code> is non blocking and fails with EAGAIN if any open Sockets exist for
+the given Context.  Ensure all sockets are closed before calling <code>zmq:term/1</code>.
+If the Context owner process dies, all Sockets in the Context will be forcefully
+closed and the Context terminated.</p>
 
 <h3><a name="Known_Limitations">Known Limitations</a></h3>
 
 <ul>
-<li>The driver attaches ZeroMQ file descriptors to Erlang VM's 
-    event loop and this functionality has only been tested with 
-    using was tested with kernel poll enabled (use "+K true" 
-    startup option)</li>
-<li>The current architecture of ZeroMQ assumes that ZeroMQ sockets
-    are owned by the thread that created them and all operations
-    on these sockets should be done in the context of that thread.
-    This is not how Erlang driver currently works.  All socket
-    calls are synchronized so that no two concurrent threads 
-    would access the same ZeroMQ socket simultaneously, however
-    Erlang pid owning the ZeroMQ socket can be scheduled on 
-    different OS kernel threads when Erlang is running with
-    SMP support enabled.  We haven't tested this sufficiently to
-    say if this is or isn't an issue.  There's an on-going 
-    discussion (as of ZeroMQ version 2.0.7) to allow ZeroMQ
-    sockets to be migrated between threads.</li>
+<li>There may be an efficiency issue using many sockets under a single context
+    as all sockets share a single erlang port, which is synchronous.  Thus one
+    socket's use may block another temporarily.</li>
+<li>The Socket gen_server will crash if passed invalid Terms.  Instead this
+    should generate the expected errno EINVAL.</li>
 </ul>
 
 <h3><a name="Usage">Usage</a></h3>
 
 <h4><a name="Sample_ZMQ_REQ_client">Sample ZMQ_REQ client</a></h4>
-<pre>    $ erl +K true -smp disable -pa /path/to/zmq/ebin
+<pre>    % Initialize a ZeroMQ context.
+    1&gt; {ok, C} = zmq:init(1).
+    {ok,&lt;0.36.0&gt;}
 
-    % Create ZeroMQ context
-    1&gt; zmq:start_link().
-    {ok,&lt;0.34.0&gt;}
-
-    % Create a ZeroMQ REQ socket and specify that messages
-    % are delivered to the current shell's mailbox.
-    2&gt; {ok, S} = zmq:socket(req, [{active, true}]).
-    {ok,{#Port&lt;0.623&gt;,1}}
+    % Create a ZeroMQ REQ socket.
+    2&gt; {ok, S} = zmq:socket(C, req).
+    {ok,&lt;0.37.0&gt;}
 
     % Connect to server
     3&gt; zmq:connect(S, "tcp://127.0.0.1:5555").
@@ -192,34 +177,47 @@ transport connections.</p>
 
     % Receive a reply
     5&gt; zmq:recv(S).
-    {error,einval}
+    {ok,&lt;&lt;"Reply"&gt;&gt;}
 
-    % Note the error - in the active socket mode we cannot
-    % receive messages by calling zmq:recv/1. Instead
-    % use receive keyword to accomplish the task.
+    % Close socket
+    6&gt; zmq:close(S).
+    ok
 
-    6&gt; f(M), receive M -&gt; M end.
-    % The process blocks because there's no reply from server
-    % Once you start the server as shown in the following steps
-    % the receive call returns with the following message:
-    {zmq,1,&lt;&lt;"Reply"&gt;&gt;}</pre>
+    % Terminate context
+    7&gt; zmq:term(C).
+    ok</pre>
 
 <h4><a name="Sample_ZMQ_REP_server">Sample ZMQ_REP server</a></h4>
 
 <p>Start another shell either within the same Erlang VM
 by using ^G, or in a separate OS shell:</p>
 
-<pre>    $ erl +K true -smp disable -pa /path/to/zmq/ebin
+<pre>    % Initialize a ZeroMQ context.
+    1&gt; {ok, C} = zmq:init(1).
+    {ok,&lt;0.36.0&gt;}
 
-    1&gt; zmq:start_link().
-    {ok,&lt;0.34.0&gt;}
-    2&gt; {ok, S} = zmq:socket(rep, [{active, false}]).
-    {ok,{#Port&lt;0.483&gt;,1}}
+    % Create a ZeroMQ REP socket.
+    2&gt; {ok, S} = zmq:socket(C, rep).
+    {ok,&lt;0.37.0&gt;}
+
+    % Establish server
     3&gt; zmq:bind(S, "tcp://127.0.0.1:5555").
     ok
+
+    % Receive message from a client
     4&gt; zmq:recv(S).
     {ok,&lt;&lt;"Test"&gt;&gt;}
+
+    % Reply to the client
     5&gt; zmq:send(S, &lt;&lt;"Reply"&gt;&gt;).
+    ok
+
+    % Close socket
+    6&gt; zmq:close(S).
+    ok
+
+    % Terminate context
+    7&gt; zmq:term(C).
     ok</pre>
 
 <h3><a name="License">License</a></h3>
@@ -228,6 +226,6 @@ The project is released under BSD license.
 
 <hr>
 <div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
-<p><i>Generated by EDoc, Jan 4 2011, 19:48:10.</i></p>
+<p><i>Generated by EDoc, Jan 12 2011, 00:13:13.</i></p>
 </body>
 </html>
